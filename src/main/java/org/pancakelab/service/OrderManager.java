@@ -13,18 +13,34 @@ import java.util.stream.Collectors;
 
 public class OrderManager {
 
+    private final PancakeService pancakeService;
     private final Map<UUID, Order> orders = new ConcurrentHashMap<>();
 
-    public Order createOrder(int building, int room) {
+    public OrderManager(PancakeService pancakeService) {
+        this.pancakeService = pancakeService;
+    }
+
+    public UUID createOrder(int building, int room) {
         Order order = new Order(building, room);
         orders.put(order.getId(), order);
-        return order;
+        return order.getId();
     }
 
     public void removePancakes(String description, UUID orderId, int count) {
         Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
         int removedCount = order.removePancakes(description, count);
         OrderLog.logRemovePancakes(order, description, removedCount, order.getPancakes().size());
+    }
+
+    public void addPancake(UUID orderId, int count) {
+        Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        pancakeService.addPancake(order, count);
     }
 
     public void cancelOrder(UUID orderId) {
@@ -33,7 +49,11 @@ public class OrderManager {
     }
 
     public void completeOrder(UUID orderId) {
-        orders.get(orderId).setOrderStatus(OrderStatus.COMPLETED);
+        Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        order.setOrderStatus(OrderStatus.COMPLETED);
     }
 
     public Set<UUID> listCompletedOrders() {
@@ -53,7 +73,11 @@ public class OrderManager {
     }
 
     public void prepareOrder(UUID orderId) {
-        orders.get(orderId).setOrderStatus(OrderStatus.PREPARED);
+        Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        order.setOrderStatus(OrderStatus.PREPARED);
     }
 
     public Set<UUID> listPreparedOrders() {
